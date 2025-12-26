@@ -61,6 +61,12 @@ async def stream_chat(conversation_id: str):
     pubsub = redis_client.pubsub()
     channel = f"conversation:{conversation_id}"
     pubsub.subscribe(channel)
+    # Mark subscriber flag so orchestrator can detect a connected client
+    sub_flag_key = f"conversation:{conversation_id}:subscribed"
+    try:
+        redis_client.set(sub_flag_key, "1", ex=30)
+    except Exception:
+        pass
 
     def event_generator():
         try:
@@ -91,6 +97,11 @@ async def stream_chat(conversation_id: str):
                 time.sleep(0.01)
         finally:
             try:
+                # Unset subscriber flag and cleanup
+                try:
+                    redis_client.delete(sub_flag_key)
+                except Exception:
+                    pass
                 pubsub.unsubscribe(channel)
                 pubsub.close()
             except Exception:

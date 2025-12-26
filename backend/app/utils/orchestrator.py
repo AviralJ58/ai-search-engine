@@ -8,6 +8,8 @@ from app.utils.llm import generate_response_stream
 # Retrieval tuning
 RETRIEVAL_MIN_SCORE = 0.65  # raw vector similarity floor; raise to be more strict
 MAX_CITATIONS = 5  # how many citations to include in the prompt/context
+# Subscriber wait
+SUBSCRIBER_WAIT_SECONDS = 2  # how long orchestrator waits for an SSE subscriber to connect
 
 
 class Orchestrator:
@@ -95,6 +97,28 @@ class Orchestrator:
     def run(self, conversation_id: str, user_message: str):
         # Wrap orchestration in try/except so we always publish a terminal event
         try:
+            # Wait briefly for a subscriber to connect (to avoid missed initial events)
+            try:
+                sub_key = f"conversation:{conversation_id}:subscribed"
+                waited = 0.0
+                interval = 0.1
+                found = False
+                while waited < SUBSCRIBER_WAIT_SECONDS:
+                    try:
+                        if self.redis.get(sub_key):
+                            found = True
+                            break
+                    except Exception:
+                        # If Redis check fails, bail out
+                        break
+                    time.sleep(interval)
+                    waited += interval
+                if not found:
+                    # publish an info event so client knows there was no subscriber at start
+                    self.publish(conversation_id, "info", {"message": "No SSE subscriber detected before generation."})
+            except Exception:
+                pass
+
             # 1) Typing start
             self.publish(conversation_id, "typing", {"status": "started"})
 
