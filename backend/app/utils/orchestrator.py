@@ -5,6 +5,10 @@ from app.utils.embeddings import embed_texts
 from app.utils.vectorstore import qdrant_client
 from app.utils.llm import generate_response_stream
 
+# Retrieval tuning
+RETRIEVAL_MIN_SCORE = 0.65  # raw vector similarity floor; raise to be more strict
+MAX_CITATIONS = 5  # how many citations to include in the prompt/context
+
 
 class Orchestrator:
     """Simple orchestrator that runs tools and publishes events via Redis.
@@ -105,39 +109,90 @@ class Orchestrator:
                 self.publish(conversation_id, "tool_call_finished", {"tool": "search_documents", "count": 0})
                 self.publish(conversation_id, "info", {"message": "No relevant documents found"})
             else:
-                for hit in results:
-                    # hit may be a ScoredPoint-like object or a dict
-                    payload = None
-                    if hasattr(hit, "payload"):
-                        payload = hit.payload
-                    elif isinstance(hit, dict) and "payload" in hit:
-                        payload = hit["payload"]
+                    candidates = []
 
-                    if not payload:
-                        # skip malformed hit
-                        continue
+                    for hit in results:
+                        # hit may be a ScoredPoint-like object or a dict
+                        payload = None
+                        if hasattr(hit, "payload"):
+                            payload = hit.payload
+                        elif isinstance(hit, dict) and "payload" in hit:
+                            payload = hit["payload"]
 
-                    citation = {
-                        "doc_id": payload.get("doc_id"),
-                        "page_number": payload.get("page_number"),
-                        "text": payload.get("text"),
-                        "start_offset": payload.get("start_offset"),
-                        "end_offset": payload.get("end_offset"),
-                        "score": getattr(hit, "score", None) if not isinstance(hit, dict) else hit.get("score"),
-                    }
-                    citations.append(citation)
-                    # publish each citation so the UI can render progressively
-                    self.publish(conversation_id, "citation", citation)
+                        if not payload:
+                            # skip malformed hit
+                            continue
 
-                self.publish(conversation_id, "tool_call_finished", {"tool": "search_documents", "count": len(citations)})
+                        # obtain score (ScoredPoint has .score; dict may have 'score')
+                        raw_score = None
+                        if hasattr(hit, "score"):
+                            try:
+                                raw_score = float(hit.score)
+                            except Exception:
+                                raw_score = None
+                        elif isinstance(hit, dict):
+                            raw_score = hit.get("score")
+                            try:
+                                raw_score = float(raw_score) if raw_score is not None else None
+                            except Exception:
+                                raw_score = None
+
+                        candidates.append({"hit": hit, "payload": payload, "score": raw_score})
+
+                    # Filter by raw similarity score to reduce noisy results
+                    filtered = [c for c in candidates if (c.get("score") is not None and c["score"] >= RETRIEVAL_MIN_SCORE)]
+
+                    # If filtering removed everything, we can be more permissive and keep top results
+                    if not filtered and candidates:
+                        # sort candidates by score (None -> -inf)
+                        candidates.sort(key=lambda x: x.get("score") or -1, reverse=True)
+                        # keep top MAX_CITATIONS but still mark they are low confidence
+                        filtered = candidates[:MAX_CITATIONS]
+                        self.publish(conversation_id, "info", {"message": "Low-confidence results returned (below similarity threshold)"})
+
+                    # Build citation map from filtered candidates (limit to MAX_CITATIONS)
+                    citation_map = []
+                    for idx, c in enumerate(filtered[:MAX_CITATIONS], start=1):
+                        p = c["payload"]
+                        excerpt = (p.get("text") or "")
+                        # truncate excerpt for prompt
+                        excerpt_short = excerpt[:1000]
+                        citation_map.append({
+                            "id": idx,
+                            "doc_id": p.get("doc_id"),
+                            "page_number": p.get("page_number"),
+                            "start_offset": p.get("start_offset"),
+                            "end_offset": p.get("end_offset"),
+                            "text_snippet": excerpt_short,
+                            "score": c.get("score"),
+                        })
+
+                    # Publish citation_map so UI can map markers to source locations
+                    if citation_map:
+                        self.publish(conversation_id, "citation_map", {"map": citation_map})
+                        # also emit individual citation events if desired
+                        for cm in citation_map:
+                            self.publish(conversation_id, "citation", cm)
+
+                    self.publish(conversation_id, "tool_call_finished", {"tool": "search_documents", "count": len(citation_map)})
 
             # 3) Tool: generate_answer (we'll call LLM and stream deltas)
             self.publish(conversation_id, "tool_call_started", {"tool": "generate_answer"})
 
-            # Build a prompt using top 3 snippets
-            context_texts = [c.get("text", "") for c in citations[:3]]
-            context = "\n\n".join(context_texts)
-            prompt = f"You are an assistant. Use the context to answer the question.\nContext:\n{context}\n\nQuestion: {user_message}\n\nAnswer:"
+            # Build a prompt using the numbered citation_map snippets and instruct the LLM to cite using bracketed numbers.
+            # citation_map is a list of dicts with keys: id, text_snippet, doc_id, page_number, start_offset, end_offset
+            context_parts = []
+            if 'citation_map' in locals() and citation_map:
+                for cm in citation_map[:MAX_CITATIONS]:
+                    marker = f"[{cm['id']}]"
+                    context_parts.append(f"{marker} {cm['text_snippet']}")
+                context = "\n\n".join(context_parts)
+                prompt = f"You are an assistant that answers questions using only the provided numbered context snippets. " \
+                         f"Cite snippets inline using their bracketed number (for example: [1], [2]). " \
+                         f"If the context does not contain enough information to answer, say you don't know and do NOT invent citations.\n\nContext:\n{context}\n\nQuestion: {user_message}\n\nAnswer:"
+            else:
+                # No snippets available
+                prompt = f"You are an assistant. There is no supporting context available. If you cannot answer the question based on general knowledge, say you don't know.\n\nQuestion: {user_message}\n\nAnswer:"
 
             # Call LLM with streaming and publish token-level deltas as they arrive
             for delta in generate_response_stream([{"role": "user", "content": prompt}]):
