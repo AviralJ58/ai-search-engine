@@ -1,9 +1,12 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import BaseModel, HttpUrl
 import uuid
 import json
 import os
 from pathlib import Path
+import urllib.parse
+import urllib.request
 from app.config import redis_client
 from app.utils.supabase_client import supabase
 
@@ -119,3 +122,61 @@ async def upload_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Redis enqueue failed: {e}")
 
     return {"message": "Upload queued for ingestion", "job_id": job_id, "doc_id": doc_id, "url": dest_path.as_uri()}
+
+
+@router.get("/documents/{doc_id}/pdf")
+async def get_document_pdf(doc_id: str):
+    """Return the original PDF for a given doc_id.
+
+    Priority order:
+    1. Local uploads directory: ./data/uploads/{doc_id}.pdf
+    2. Supabase `documents` table `url` field when it points to a local file (file://) or an absolute path
+    3. If `url` is http(s) return a redirect so frontend can download the file
+    """
+    # 1) Check local uploads directory first
+    local_path = Path.cwd() / "data" / "uploads" / f"{doc_id}.pdf"
+    if local_path.exists():
+        return FileResponse(path=str(local_path), media_type="application/pdf", filename=f"{doc_id}.pdf")
+
+    # 2) Query Supabase for the document record
+    try:
+        res = supabase.table("documents").select("url", "file_name").eq("doc_id", doc_id).execute()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Supabase query failed: {e}")
+
+    if not res.data or len(res.data) == 0:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    doc = res.data[0]
+    url = doc.get("url")
+    file_name = doc.get("file_name") or f"{doc_id}.pdf"
+
+    if not url:
+        raise HTTPException(status_code=404, detail="No file url available for this document")
+
+    # If the URL is a file:// URI, convert to local path and serve
+    if isinstance(url, str) and url.startswith("file://"):
+        try:
+            parsed = urllib.parse.urlparse(url)
+            # Convert URL path to OS-native path (handles Windows drive letters)
+            local_file_path = Path(urllib.request.url2pathname(parsed.path))
+            if local_file_path.exists():
+                return FileResponse(path=str(local_file_path), media_type="application/pdf", filename=file_name)
+            else:
+                raise HTTPException(status_code=404, detail="Local file referenced by document record not found")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to resolve local file URL: {e}")
+
+    # If the URL is an http(s) link, redirect the client to it so the frontend can fetch
+    if isinstance(url, str) and (url.startswith("http://") or url.startswith("https://")):
+        return RedirectResponse(url)
+
+    # As a last resort, if url is a plain filesystem path
+    try:
+        fallback_path = Path(url)
+        if fallback_path.exists():
+            return FileResponse(path=str(fallback_path), media_type="application/pdf", filename=file_name)
+    except Exception:
+        pass
+
+    raise HTTPException(status_code=404, detail="Document file not found")
