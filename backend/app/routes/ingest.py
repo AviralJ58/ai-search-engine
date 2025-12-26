@@ -118,4 +118,4 @@ async def upload_pdf(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Redis enqueue failed: {e}")
 
-    return {"message": "Upload queued for ingestion", "job_id": job_id, "doc_id": doc_id}
+    return {"message": "Upload queued for ingestion", "job_id": job_id, "doc_id": doc_id, "url": dest_path.as_uri()}
