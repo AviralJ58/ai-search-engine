@@ -1,0 +1,27 @@
+# Core server
+fastapi
+uvicorn
+
+# Asynchronous tasks and queue
+redis
+rq
+
+# Embeddings & LLM
+sentence-transformers
+google-genai
+
+# PostgreSQL client
+supabase
+
+# Vector database client
+qdrant-client
+
+# Data handling
+pydantic
+requests
+bs4
+python-multipart
+pdfplumber
+
+# Environment variables
+python-dotenv
