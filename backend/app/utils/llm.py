@@ -66,5 +66,8 @@ def generate_response_stream(messages):
         return
 
     except Exception as e:
-        # On error, yield an error token so orchestrator can publish it
-        yield f"LLM stream error: {e}"
+        # On error, raise so callers can handle and publish proper error events.
+        # Previously we yielded an error string which was treated as normal
+        # text_delta by the orchestrator. Raising here ensures the orchestrator's
+        # exception handler emits an `error` event and a terminal `done`.
+        raise
