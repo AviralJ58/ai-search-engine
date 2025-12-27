@@ -154,27 +154,27 @@ export default function ChatContainer() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-start justify-center p-4">
-      <div className="w-full max-w-3xl bg-white shadow rounded-lg overflow-hidden">
-        <div className="p-4 border-b flex items-center justify-between">
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-start justify-center p-4 transition-colors duration-500">
+  <div className="w-full max-w-3xl bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden transition-colors duration-500">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Conversation</h2>
         </div>
         <div className="p-4 h-[70vh] overflow-auto">
           <MessageList conversationId={selectedConversation || ""} />
         </div>
-        <div className="p-4 border-t flex gap-2">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 border rounded px-3 py-2"
+            className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             placeholder="Ask a question..."
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
           <label className="inline-flex items-center gap-2">
             <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleUpload(e.target.files?.[0])} />
-            <span className="px-3 py-2 border rounded cursor-pointer bg-white">Upload PDF</span>
+            <span className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded cursor-pointer bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">Upload PDF</span>
           </label>
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded" onClick={handleSend}>Send</button>
+          <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition" onClick={handleSend}>Send</button>
         </div>
       </div>
 

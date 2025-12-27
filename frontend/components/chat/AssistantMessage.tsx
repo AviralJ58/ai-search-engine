@@ -23,8 +23,8 @@ export default function AssistantMessage({ message }: { message: Message }) {
     });
   }
   return (
-    <div className="p-3 bg-gray-50 border rounded">
-      <div className="text-gray-800 whitespace-pre-wrap">{content}</div>
+    <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded transition-colors duration-500">
+      <div className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{content}</div>
       {citations && citations.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {citations.map((c: any) => (

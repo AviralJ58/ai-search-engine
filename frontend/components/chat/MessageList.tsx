@@ -28,7 +28,7 @@ export default function MessageList({ conversationId }: { conversationId: string
 
       {/* Streaming/typing/toolcall indicator */}
       {streaming && streaming.active && (
-        <div className="p-3 bg-gray-50 border rounded">
+        <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
           <div className="flex items-center gap-2">
             {/* Tool call progress indicator */}
             {streaming.toolStatus?.tool === "search_documents" && (
@@ -42,7 +42,7 @@ export default function MessageList({ conversationId }: { conversationId: string
             <TypingIndicator />
             )}
           </div>
-          <div className="mt-2 text-gray-800 whitespace-pre-wrap">
+          <div className="mt-2 text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
             {streaming.buffer}
             <StreamingCursor />
           </div>

@@ -21,7 +21,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
-      <main className="flex-1 p-6">
+  <main className="flex-1 p-6 bg-white dark:bg-gray-900 transition-colors duration-500">
         <ChatContainer />
       </main>
     </div>
