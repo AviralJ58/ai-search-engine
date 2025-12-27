@@ -4,16 +4,20 @@ import React, { useEffect, useRef } from "react";
 import { useChatStore } from "../../store/chatStore";
 import UserMessage from "./UserMessage";
 import AssistantMessage from "./AssistantMessage";
+import TypingIndicator from "./TypingIndicator";
+import StreamingCursor from "./StreamingCursor";
+import ToolCallIndicator from "./ToolCallIndicator";
 
-export default function MessageList({ conversationId }: { conversationId: string }) {
+export default function MessageList({ conversationId, scrollRef }: { conversationId: string, scrollRef?: React.RefObject<HTMLDivElement> }) {
   const messages = useChatStore((s) => s.messages[conversationId] || []);
   const streaming = useChatStore((s) => s.streaming[conversationId]);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // auto-scroll to bottom when messages change or streaming buffer updates
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, streaming?.buffer]);
+    if (scrollRef?.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages.length, streaming?.buffer, scrollRef]);
 
   return (
     <div className="space-y-4">
@@ -23,14 +27,28 @@ export default function MessageList({ conversationId }: { conversationId: string
         </div>
       ))}
 
-      {/* ephemeral streaming assistant while active */}
+      {/* Streaming/typing/toolcall indicator */}
       {streaming && streaming.active && (
         <div className="p-3 bg-gray-50 border rounded">
-          <div className="text-sm text-gray-500">AI is typing…</div>
-          <div className="mt-2 text-gray-800 whitespace-pre-wrap">{streaming.buffer}</div>
+          <div className="flex items-center gap-2">
+            {/* Tool call progress indicator */}
+            {streaming.toolStatus?.tool === "search_documents" && (
+              <ToolCallIndicator text="Searching..." />
+            )}
+            {streaming.toolStatus?.tool === "search_documents" && streaming.toolStatus?.status == null && (
+              <ToolCallIndicator text="Reading PDF..." />
+            )}
+            {/* Typing indicator shown when generating answer */}
+            {streaming.toolStatus?.tool === "generate_answer" && (
+            <TypingIndicator />
+            )}
+          </div>
+          <div className="mt-2 text-gray-800 whitespace-pre-wrap">
+            {streaming.buffer}
+            <StreamingCursor />
+          </div>
         </div>
       )}
-      <div ref={bottomRef} />
     </div>
   );
 }
