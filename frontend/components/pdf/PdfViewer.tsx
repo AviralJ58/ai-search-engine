@@ -1,13 +1,37 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-// NOTE: This component uses `react-pdf` or `@react-pdf-viewer/core` in production.
-// Keep these as TODOs so you can install preferred library and adjust props.
 
-export default function PdfViewer({ docId, onClose, openPage }: { docId: string; onClose: () => void; openPage?: number }) {
-  // For now we render an iframe pointing at the backend PDF endpoint.
-  const src = `/documents/${docId}/pdf`;
+import React, { useRef, useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Worker, Viewer, SpecialZoomLevel, ScrollMode, Plugin, RenderViewer, Slot } from '@react-pdf-viewer/core';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import '@react-pdf-viewer/core/lib/styles/index.css';
+import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+import { API_BASE } from '../../lib/api';
+
+export default function PdfViewer({ docId, onClose, pageNumber, startOffset, endOffset, citationId }: {
+  docId: string;
+  onClose: () => void;
+  pageNumber?: number;
+  startOffset?: number;
+  endOffset?: number;
+  citationId?: number;
+}) {
+  // Build the backend PDF URL
+  const src = `${API_BASE.replace(/\/$/, "")}/documents/${docId}/pdf`;
+  const defaultLayoutPluginInstance = defaultLayoutPlugin();
+  const viewerRef = useRef<Viewer | null>(null);
+  const [currentPage, setCurrentPage] = useState(pageNumber ? pageNumber - 1 : 0);
+
+  // Scroll to the correct page when opened
+  useEffect(() => {
+    if (typeof pageNumber === 'number') {
+      setCurrentPage(pageNumber - 1);
+    }
+  }, [pageNumber]);
+
+  // TODO: Highlighting by offset requires custom text layer plugin or overlay.
+  // For now, we scroll to the page and can add highlight overlay later.
 
   return (
     <motion.div
@@ -23,7 +47,15 @@ export default function PdfViewer({ docId, onClose, openPage }: { docId: string;
         <button onClick={onClose} className="text-gray-600">Close</button>
       </div>
       <div className="h-[calc(100vh-64px)]">
-        <iframe src={src} className="w-full h-full" title="pdf" />
+        <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}>
+          <Viewer
+            fileUrl={src}
+            plugins={[defaultLayoutPluginInstance]}
+            defaultScale={SpecialZoomLevel.PageFit}
+            initialPage={currentPage}
+            scrollMode={ScrollMode.Vertical}
+          />
+        </Worker>
       </div>
     </motion.div>
   );

@@ -6,6 +6,16 @@ interface ChatState {
   messages: Record<string, Message[]>; // keyed by conversation_id
   streaming: Record<string, StreamingState | undefined>;
   selectedConversation?: string | null;
+  pdfViewer: {
+    open: boolean;
+    docId?: string;
+    pageNumber?: number;
+    startOffset?: number;
+    endOffset?: number;
+    citationId?: number;
+  };
+  openPdf: (opts: { docId: string; pageNumber?: number; startOffset?: number; endOffset?: number; citationId?: number }) => void;
+  closePdf: () => void;
   setConversations: (c: { conversation_id: string; title?: string }[]) => void;
   setSelectedConversation: (id: string | null) => void;
   addConversation: (conv: { conversation_id: string; title?: string }) => void;
@@ -23,6 +33,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   messages: {},
   streaming: {},
   selectedConversation: null,
+  pdfViewer: { open: false },
   setConversations: (c) => set({ conversations: c }),
   setSelectedConversation: (id) => set(() => ({ selectedConversation: id })),
   addConversation: (conv) => set((s) => ({ conversations: [conv, ...s.conversations] })),
@@ -58,4 +69,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const updated = cur ? { ...cur, citationMap: map } : { conversationId, buffer: "", active: false, citationMap: map };
       return { streaming: { ...s.streaming, [conversationId]: updated } } as any;
     }),
+
+  openPdf: (opts) => set(() => ({ pdfViewer: { open: true, ...opts } })),
+  closePdf: () => set(() => ({ pdfViewer: { open: false } })),
 }));

@@ -4,9 +4,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../../store/chatStore";
 import { postChat, getConversationHistory } from "../../lib/api";
 import { ConversationSse } from "../../lib/sse";
-import MessageList from "./MessageList";
+
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
+import MessageList from "./MessageList";
+
+const PdfViewer = dynamic(() => import("../pdf/PdfViewer"), { ssr: false });
 
 export default function ChatContainer() {
   const [input, setInput] = useState("");
@@ -21,7 +25,8 @@ export default function ChatContainer() {
   const setCitationMap = useChatStore((s) => s.setCitationMap);
   const selectedConversation = useChatStore((s) => s.selectedConversation);
   const setSelectedConversation = useChatStore((s) => s.setSelectedConversation);
-
+  const pdfViewer = useChatStore((s) => s.pdfViewer);
+  const closePdf = useChatStore((s) => s.closePdf);
   const sseRef = useRef<ConversationSse | null>(null);
 
   useEffect(() => {
@@ -167,9 +172,18 @@ export default function ChatContainer() {
         </div>
       </div>
 
-      {/* PDF viewer container (animated) TODO: open via store when citation clicked */}
+      {/* PDF viewer container (animated) opens when citation is clicked */}
       <AnimatePresence>
-        {/* placeholder for PdfViewer modal / slide-in */}
+        {pdfViewer.open && pdfViewer.docId && (
+          <PdfViewer
+            docId={pdfViewer.docId}
+            pageNumber={pdfViewer.pageNumber}
+            startOffset={pdfViewer.startOffset}
+            endOffset={pdfViewer.endOffset}
+            citationId={pdfViewer.citationId}
+            onClose={closePdf}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
