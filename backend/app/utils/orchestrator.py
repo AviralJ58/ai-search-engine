@@ -249,8 +249,7 @@ class Orchestrator:
                     "conversation_id": conversation_id,
                     "role": "assistant",
                     "content": assistant_buffer,
-                    "metadata": metadata,
-                    "created_at": None
+                    "metadata": metadata
                 }).execute()
             except Exception as e:
                 # Non-fatal: log and continue (do not break the orchestration on DB failures)
