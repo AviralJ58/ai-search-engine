@@ -4,6 +4,8 @@ from typing import List
 from app.utils.embeddings import embed_texts
 from app.utils.vectorstore import qdrant_client
 from app.utils.llm import generate_response_stream
+from app.utils.supabase_client import supabase
+import uuid
 
 # Retrieval tuning
 RETRIEVAL_MIN_SCORE = 0.65  # raw vector similarity floor; raise to be more strict
@@ -219,9 +221,40 @@ class Orchestrator:
                 prompt = f"You are an assistant. There is no supporting context available. If you cannot answer the question based on general knowledge, say you don't know.\n\nQuestion: {user_message}\n\nAnswer:"
 
             # Call LLM with streaming and publish token-level deltas as they arrive
+            assistant_buffer = ""
             for delta in generate_response_stream([{"role": "user", "content": prompt}]):
                 # delta may be a short token or string fragment
+                try:
+                    if isinstance(delta, str):
+                        assistant_buffer += delta
+                    else:
+                        # try to coerce to string when possible
+                        assistant_buffer += str(delta)
+                except Exception:
+                    # ignore non-stringable chunks
+                    pass
+
                 self.publish(conversation_id, "text_delta", {"delta": delta})
+
+            # Persist final assistant message to Supabase so conversation history is complete
+            try:
+                # Build metadata (include citation_map if available)
+                metadata = {}
+                if 'citation_map' in locals() and citation_map:
+                    metadata['citation_map'] = citation_map
+
+                assistant_message_id = str(uuid.uuid4())
+                supabase.table("messages").insert({
+                    "message_id": assistant_message_id,
+                    "conversation_id": conversation_id,
+                    "role": "assistant",
+                    "content": assistant_buffer,
+                    "metadata": metadata,
+                    "created_at": None
+                }).execute()
+            except Exception as e:
+                # Non-fatal: log and continue (do not break the orchestration on DB failures)
+                print(f"[Orchestrator] Warning: failed to persist assistant message: {e}")
 
             # Finish tool
             self.publish(conversation_id, "tool_call_finished", {"tool": "generate_answer"})

@@ -27,8 +27,7 @@ async def start_chat(payload: ChatRequest, background_tasks: BackgroundTasks):
         conversation_id = str(uuid.uuid4())
         supabase.table("conversations").insert({
             "conversation_id": conversation_id,
-            "title": "",
-            "created_at": None
+            "title": ""
         }).execute()
 
     # Insert user message
@@ -38,8 +37,7 @@ async def start_chat(payload: ChatRequest, background_tasks: BackgroundTasks):
         "conversation_id": conversation_id,
         "role": "user",
         "content": message_text,
-        "metadata": {},
-        "created_at": None
+        "metadata": {}
     }).execute()
 
     # Kick off orchestrator in background to generate streaming response
