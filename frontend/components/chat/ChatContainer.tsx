@@ -100,11 +100,17 @@ export default function ChatContainer() {
         const r = await postChat(input);
         const convId = r.conversation_id || r.conversationId || r.conversation || null;
         if (convId) {
-          // add to sidebar list and select
+          // Fetch updated conversation list to get the AI-generated title
           try {
-            addConversation({ conversation_id: convId, title: input.slice(0, 80) });
+            const { listConversations } = await import("../../lib/api");
+            const data = await listConversations();
+            if (data && data.conversations) {
+              const { setConversations } = await import("../../store/chatStore");
+              setConversations(data.conversations);
+            }
           } catch (err) {
-            // ignore if store method missing
+            // fallback: add with placeholder title if fetch fails
+            addConversation({ conversation_id: convId, title: input.slice(0, 80) });
           }
           setSelectedConversation(convId);
           // optimistic add user message

@@ -5,6 +5,7 @@ import json
 from app.utils.supabase_client import supabase
 from app.config import redis_client
 from app.utils.orchestrator import Orchestrator
+from app.utils.llm import generate_response
 
 router = APIRouter()
 
@@ -25,9 +26,16 @@ async def start_chat(payload: ChatRequest, background_tasks: BackgroundTasks):
         conversation_id = payload.conversation_id
     else:
         conversation_id = str(uuid.uuid4())
+        # Generate a short AI-based title for the conversation using the first message
+        title_prompt = f"Generate a short, 3-4 word title for this conversation based on the following user message. Do not use quotes or punctuation.\nMessage: {message_text}\nTitle:"
+        try:
+            ai_title = generate_response([{"role": "user", "content": title_prompt}])
+            ai_title = ai_title.strip().split("\n")[0][:48]
+        except Exception:
+            ai_title = message_text[:32]
         supabase.table("conversations").insert({
             "conversation_id": conversation_id,
-            "title": ""
+            "title": ai_title
         }).execute()
 
     # Insert user message

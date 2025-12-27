@@ -73,3 +73,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
   openPdf: (opts) => set(() => ({ pdfViewer: { open: true, ...opts } })),
   closePdf: () => set(() => ({ pdfViewer: { open: false } })),
 }));
+
+// Export setConversations for direct import
+export const setConversations = (c: { conversation_id: string; title?: string }[]) => {
+  // Use the store's setState method
+  useChatStore.getState().setConversations(c);
+};
