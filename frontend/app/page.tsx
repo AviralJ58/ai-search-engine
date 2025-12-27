@@ -19,9 +19,9 @@ export default function HomePage() {
   }, [data, setConversations, setSelected]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row overflow-x-hidden">
       <Sidebar />
-  <main className="flex-1 p-6 bg-white dark:bg-gray-900 transition-colors duration-500">
+      <main className="flex-1 p-2 sm:p-4 md:p-6 bg-white dark:bg-gray-900 transition-colors duration-500 min-w-0">
         <ChatContainer />
       </main>
     </div>

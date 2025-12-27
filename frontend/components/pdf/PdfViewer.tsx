@@ -39,14 +39,14 @@ export default function PdfViewer({ docId, onClose, pageNumber, startOffset, end
       animate={{ x: 0, opacity: 1, scale: 1 }}
       exit={{ x: 300, opacity: 0, scale: 0.98 }}
       transition={{ duration: 0.35 }}
-  className="fixed inset-y-0 right-0 w-full md:w-2/5 bg-white dark:bg-gray-900 shadow-lg z-50 transition-colors duration-500"
-      style={{ maxWidth: 980 }}
+  className="fixed inset-y-0 right-0 w-full max-w-full sm:max-w-[90vw] md:w-2/5 bg-white dark:bg-gray-900 shadow-lg z-50 transition-colors duration-500 flex flex-col"
+  style={{ maxWidth: 980 }}
     >
       <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between transition-colors duration-500">
         <div className="font-medium text-gray-900 dark:text-gray-100">PDF Viewer</div>
         <button onClick={onClose} className="text-gray-600 dark:text-gray-300">Close</button>
       </div>
-      <div className="h-[calc(100vh-64px)] bg-white dark:bg-gray-900 transition-colors duration-500">
+  <div className="flex-1 min-h-0 h-[60vh] sm:h-[calc(100vh-64px)] bg-white dark:bg-gray-900 transition-colors duration-500 overflow-auto">
         <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`}>
           <Viewer
             fileUrl={src}

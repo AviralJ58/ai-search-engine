@@ -154,19 +154,19 @@ export default function ChatContainer() {
   }
 
   return (
-  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-start justify-center p-4 transition-colors duration-500">
-  <div className="w-full max-w-3xl bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden transition-colors duration-500">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-1 sm:p-2 md:p-4 transition-colors duration-500 w-full overflow-x-hidden">
+      <div className="w-full max-w-3xl bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden transition-colors duration-500 flex flex-col" style={{ minHeight: '70vh' }}>
+        <div className="p-2 sm:p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Conversation</h2>
         </div>
-        <div className="p-4 h-[70vh] overflow-auto">
+        <div className="p-2 sm:p-4 overflow-auto" style={{ height: '60vh' }}>
           <MessageList conversationId={selectedConversation || ""} />
         </div>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex gap-2">
+        <div className="p-2 sm:p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+            className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 min-w-0"
             placeholder="Ask a question..."
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
