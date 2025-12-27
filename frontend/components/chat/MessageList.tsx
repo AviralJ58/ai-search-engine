@@ -8,16 +8,15 @@ import TypingIndicator from "./TypingIndicator";
 import StreamingCursor from "./StreamingCursor";
 import ToolCallIndicator from "./ToolCallIndicator";
 
-export default function MessageList({ conversationId, scrollRef }: { conversationId: string, scrollRef?: React.RefObject<HTMLDivElement> }) {
+export default function MessageList({ conversationId }: { conversationId: string }) {
   const messages = useChatStore((s) => s.messages[conversationId] || []);
   const streaming = useChatStore((s) => s.streaming[conversationId]);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // auto-scroll to bottom when messages change or streaming buffer updates
   useEffect(() => {
-    if (scrollRef?.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages.length, streaming?.buffer, scrollRef]);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, streaming?.buffer]);
 
   return (
     <div className="space-y-4">
@@ -49,6 +48,7 @@ export default function MessageList({ conversationId, scrollRef }: { conversatio
           </div>
         </div>
       )}
+      <div ref={bottomRef} />
     </div>
   );
 }

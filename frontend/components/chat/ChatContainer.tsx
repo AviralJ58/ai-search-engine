@@ -13,7 +13,6 @@ import MessageList from "./MessageList";
 const PdfViewer = dynamic(() => import("../pdf/PdfViewer"), { ssr: false });
 
 export default function ChatContainer() {
-  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [input, setInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const addMessage = useChatStore((s) => s.addMessage);
@@ -160,8 +159,8 @@ export default function ChatContainer() {
         <div className="p-4 border-b flex items-center justify-between">
           <h2 className="text-lg font-semibold">Conversation</h2>
         </div>
-        <div className="p-4 h-[70vh] overflow-auto" ref={scrollRef}>
-          <MessageList conversationId={selectedConversation || ""} scrollRef={scrollRef} />
+        <div className="p-4 h-[70vh] overflow-auto">
+          <MessageList conversationId={selectedConversation || ""} />
         </div>
         <div className="p-4 border-t flex gap-2">
           <input
