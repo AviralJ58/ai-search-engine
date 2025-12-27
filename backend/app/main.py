@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import ingest, query, chat
+from app.routes import ingest, query, chat, conversations
 from app.config import redis_client, qdrant_client
 
 app = FastAPI(title="Scalable Web-Aware RAG Engine (Prototype)")
@@ -28,3 +28,4 @@ async def health_check():
 app.include_router(query.router)
 app.include_router(ingest.router)
 app.include_router(chat.router)
+app.include_router(conversations.router)
