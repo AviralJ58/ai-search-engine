@@ -8,7 +8,7 @@ router = APIRouter()
 async def list_conversations():
     """Return a list of conversations (id, title, created_at)."""
     try:
-        res = supabase.table("conversations").select("conversation_id, title, created_at").execute()
+        res = supabase.table("conversations").select("conversation_id, title, created_at").order("created_at").execute()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Supabase query failed: {e}")
 
