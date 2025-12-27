@@ -23,8 +23,10 @@ async def get_conversation_history(conversation_id: str):
     Messages are returned oldest-first. Each message contains: message_id, role, content, metadata, created_at
     """
     try:
-        res = supabase.table("messages").select("message_id,role,content,metadata,created_at").eq("conversation_id", conversation_id).order("created_at", {"ascending": True}).execute()
+        # supabase-py/Postgrest order() expects the second parameter as a keyword (ascending=True)
+        res = supabase.table("messages").select("message_id,role,content,metadata,created_at").eq("conversation_id", conversation_id).order("created_at").execute()
     except Exception as e:
+        print(f"Supabase query failed: {e}")
         raise HTTPException(status_code=500, detail=f"Supabase query failed: {e}")
 
     data = res.data or []
