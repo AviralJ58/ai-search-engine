@@ -214,7 +214,7 @@ class Orchestrator:
                     context_parts.append(f"{marker} {cm['text_snippet']}")
                 context = "\n\n".join(context_parts)
                 prompt = f"You are an assistant that answers questions using only the provided numbered context snippets. " \
-                         f"Cite snippets inline using their bracketed number (for example: [1], [2]). " \
+                         f"Cite snippets inline using their bracketed number (for example: [1], [2]). If multiple citations for the same information are needed, include all relevant bracketed numbers (for example: [1][2]). " \
                          f"If the context does not contain enough information to answer, say you don't know and do NOT invent citations.\n\nContext:\n{context}\n\nQuestion: {user_message}\n\nAnswer:"
             else:
                 # No snippets available
