@@ -203,7 +203,10 @@ export default function Sidebar() {
       {/* -------- Mobile Hamburger -------- */}
       {!mobileOpen && (
         <button
-          onClick={() => setMobileOpen(true)}
+          onClick={() => {
+            setCollapsed(false); // Always expand sidebar for mobile
+            setMobileOpen(true);
+          }}
           className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-md bg-indigo-600 text-white shadow"
         >
           <HamburgerIcon />
