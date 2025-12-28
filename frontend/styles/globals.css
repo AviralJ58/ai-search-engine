@@ -6,4 +6,41 @@ html, body, #__next {
   height: 100%;
 }
 
-/* minimal utilities for the app */
+
+/* Minimal, thin scrollbar styles for all platforms */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e5e7eb; /* Tailwind gray-200 */
+  border-radius: 999px;
+  min-height: 24px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d1d5db; /* Tailwind gray-300 */
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: #27272a; /* Tailwind zinc-800 */
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46; /* Tailwind zinc-700 */
+  }
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e5e7eb transparent;
+}
+@media (prefers-color-scheme: dark) {
+  * {
+    scrollbar-color: #27272a transparent;
+  }
+}
