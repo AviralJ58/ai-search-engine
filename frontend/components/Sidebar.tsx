@@ -43,6 +43,13 @@ export default function Sidebar() {
   const expandedWidth = 288;
   const collapsedWidth = 64;
 
+  /* ---------------- Mount State ---------------- */
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   /* ---------------- Icons ---------------- */
   const HamburgerIcon = () => (
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -73,7 +80,7 @@ export default function Sidebar() {
   const SidebarContent = (
     <>
       {/* ---------- Header ---------- */}
-      <div className="flex items-center justify-between px-3 py-3 border-b relative">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-gray-200 dark:border-neutral-800 relative">
         {/* Left side: Hamburger + Title */}
         <div className="flex items-center gap-3">
           {/* Desktop hamburger */}
@@ -163,7 +170,7 @@ export default function Sidebar() {
       )}
 
       {/* ---------- Theme ---------- */}
-      <div className="p-3 border-t">
+      <div className="p-3 border-t border-gray-200 dark:border-neutral-800">
         <button
           onClick={toggleTheme}
           className={`w-full flex items-center justify-center gap-2 p-2 border rounded transition ${collapsed ? "rounded-full p-3" : ""
@@ -220,12 +227,15 @@ export default function Sidebar() {
 
       {/* -------- Desktop Sidebar -------- */}
       <motion.aside
-        className="hidden md:flex flex-col bg-white dark:bg-gray-900 h-screen shadow z-20"
+        className={`hidden md:flex flex-col bg-white dark:bg-gray-900 shadow z-20 border-r border-gray-200 dark:border-neutral-800 ${
+    mounted ? "h-full" : "h-full"
+  }`}
         animate={{ width: collapsed ? collapsedWidth : expandedWidth }}
         transition={{ duration: 0.3 }}
       >
         {SidebarContent}
       </motion.aside>
+
     </>
   );
 }

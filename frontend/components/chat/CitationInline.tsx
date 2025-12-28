@@ -19,7 +19,11 @@ export default function CitationInline({ citation }: { citation: CitationMapEntr
   }
 
   return (
-    <button onClick={onClick} className="inline-flex items-center justify-center text-xs border px-2 py-1 rounded hover:bg-gray-100">
+    <button
+      onClick={onClick}
+      className="inline-flex items-center justify-center text-xs rounded-full bg-gray-100 dark:bg-neutral-800 text-gray-500 px-2 py-0.5 ml-1 hover:bg-gray-200 dark:hover:bg-neutral-700 transition border border-gray-200 dark:border-neutral-700"
+      style={{ fontVariantNumeric: 'tabular-nums' }}
+    >
       [{citation.id}]
     </button>
   );

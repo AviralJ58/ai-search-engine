@@ -1,8 +1,9 @@
 "use client";
+
 import React from "react";
 import { Message } from "../../lib/types";
 import CitationInline from "./CitationInline";
-import SourceCards from "./SourceCards";
+import ReactMarkdown from "react-markdown";
 
 export default function AssistantMessage({ message }: { message: Message }) {
   const citations = message.metadata?.citation_map || [];
@@ -23,16 +24,18 @@ export default function AssistantMessage({ message }: { message: Message }) {
     });
   }
   return (
-    <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded transition-colors duration-500">
-      <div className="text-gray-800 dark:text-gray-100 whitespace-pre-wrap">{content}</div>
+    <div className="w-full pl-4 max-w-xl mx-0">
+      <div className="prose prose-neutral dark:prose-invert max-w-none text-base leading-relaxed">
+        <ReactMarkdown>{typeof content === 'string' ? content : ''}</ReactMarkdown>
+        {typeof content !== 'string' && content}
+      </div>
       {citations && citations.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           {citations.map((c: any) => (
             <button
               key={c.id}
               onClick={() => {
                 if (c.doc_id) {
-                  // open PDF viewer and jump to page
                   const openPdf = require("../../store/chatStore").useChatStore.getState().openPdf;
                   openPdf({
                     docId: c.doc_id,
@@ -43,7 +46,7 @@ export default function AssistantMessage({ message }: { message: Message }) {
                   });
                 }
               }}
-              className="px-3 py-1 rounded bg-indigo-100 text-indigo-800 text-xs font-medium hover:bg-indigo-200 transition"
+              className="inline-block px-3 py-1 rounded bg-gray-100 dark:bg-neutral-800 text-gray-500 text-xs font-medium hover:bg-gray-200 dark:hover:bg-neutral-700 transition cursor-pointer"
               title={c.text_snippet || `Source ${c.id}`}
             >
               Source {c.id}
@@ -51,6 +54,7 @@ export default function AssistantMessage({ message }: { message: Message }) {
           ))}
         </div>
       )}
+      <div className="border-t border-gray-100 dark:border-neutral-800 my-8" />
     </div>
   );
 }

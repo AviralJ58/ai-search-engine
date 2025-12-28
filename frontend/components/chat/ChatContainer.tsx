@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Toast from "../Toast";
 import { useChatStore } from "../../store/chatStore";
 import { postChat, getConversationHistory } from "../../lib/api";
 import { ConversationSse } from "../../lib/sse";
@@ -15,6 +16,7 @@ const PdfViewer = dynamic(() => import("../pdf/PdfViewer"), { ssr: false });
 export default function ChatContainer() {
   const [input, setInput] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [toast, setToast] = useState<{ show: boolean; message: string }>({ show: false, message: "" });
   const addMessage = useChatStore((s) => s.addMessage);
   const setMessages = useChatStore((s) => s.setMessages);
   const addConversation = useChatStore((s) => (s as any).addConversation);
@@ -81,6 +83,15 @@ export default function ChatContainer() {
           break;
         case "error":
           stopStreaming(selectedConversation);
+          // Set error message in chat store
+          if (data && typeof data.error === "string") {
+            // If backend sends { error: "..." }
+            useChatStore.getState().setError(selectedConversation, data.error);
+          } else if (typeof data === "string") {
+            useChatStore.getState().setError(selectedConversation, data);
+          } else {
+            useChatStore.getState().setError(selectedConversation, "An unknown error occurred.");
+          }
           break;
         default:
           break;
@@ -144,37 +155,47 @@ export default function ChatContainer() {
     setUploading(true);
     try {
       const res = await (await import("../../lib/api")).uploadPdf(file);
-      // res contains doc_id, job_id etc. We could optionally add a system message or notify
+      // If uploadPdf does not throw, assume 2xx response
+      setToast({ show: true, message: "PDF uploaded successfully!" });
       console.log("Upload response", res);
-    } catch (e) {
+    } catch (e: any) {
       console.error("Upload failed", e);
+      let msg = "Upload failed.";
+      if (e && typeof e === "object" && "message" in e && typeof e.message === "string") {
+        msg = e.message;
+      }
+      setToast({ show: true, message: msg });
     } finally {
       setUploading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-1 sm:p-2 md:p-4 transition-colors duration-500 w-full overflow-x-hidden">
-      <div className="w-full max-w-3xl bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden transition-colors duration-500 flex flex-col" style={{ minHeight: '70vh' }}>
-        <div className="p-2 sm:p-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Conversation</h2>
-        </div>
-        <div className="p-2 sm:p-4 overflow-auto" style={{ height: '60vh' }}>
+    <>
+      <Toast message={toast.message} show={toast.show} onClose={() => setToast({ show: false, message: "" })} />
+      <div className="h-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-2 sm:px-4 transition-colors duration-500 w-full overflow-x-hidden">
+      <div className="w-full max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-neutral-800 flex flex-col shadow-none h-full">
+        <div className="hidden">Conversation</div>
+        <div className="flex-1 min-h-0 overflow-auto">
           <MessageList conversationId={selectedConversation || ""} />
         </div>
-        <div className="p-2 sm:p-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row gap-2">
+        <div className="p-2 sm:p-4 border-t border-gray-100 dark:border-neutral-800 flex flex-row gap-2 bg-white dark:bg-gray-900 rounded-b-xl fixed-bottom">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="flex-1 border border-gray-200 dark:border-gray-700 rounded px-3 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 min-w-0"
+            className="flex-1 border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 min-w-0 text-base focus:outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900 transition"
             placeholder="Ask a question..."
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
           />
           <label className="inline-flex items-center gap-2">
             <input type="file" accept="application/pdf" className="hidden" onChange={(e) => handleUpload(e.target.files?.[0])} />
-            <span className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded cursor-pointer bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">Upload PDF</span>
+            <span className="p-2 border border-gray-200 dark:border-gray-700 rounded-full cursor-pointer bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+              <img src="/images/attachment-2-svgrepo-com.svg" alt="Attach" width={20} height={20} className="dark:invert" />
+            </span>
           </label>
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition" onClick={handleSend}>Send</button>
+          <button className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white w-10 h-10 rounded-full transition" onClick={handleSend} aria-label="Send">
+            <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7" /></svg>
+          </button>
         </div>
       </div>
 
@@ -192,5 +213,6 @@ export default function ChatContainer() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }

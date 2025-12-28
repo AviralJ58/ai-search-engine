@@ -5,6 +5,7 @@ interface ChatState {
   conversations: { conversation_id: string; title?: string }[];
   messages: Record<string, Message[]>; // keyed by conversation_id
   streaming: Record<string, StreamingState | undefined>;
+  errors: Record<string, string | null>; // error message per conversation
   selectedConversation?: string | null;
   pdfViewer: {
     open: boolean;
@@ -26,12 +27,15 @@ interface ChatState {
   stopStreaming: (conversationId: string) => void;
   setToolStatus: (conversationId: string, toolStatus: { tool: string; status: string } | null) => void;
   setCitationMap: (conversationId: string, map: CitationMapEntry[]) => void;
+  setError: (conversationId: string, error: string) => void;
+  clearError: (conversationId: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
   messages: {},
   streaming: {},
+  errors: {},
   selectedConversation: null,
   pdfViewer: { open: false },
   setConversations: (c) => set({ conversations: c }),
@@ -43,6 +47,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   startStreaming: (conversationId) =>
     set((s) => ({
       streaming: { ...s.streaming, [conversationId]: { conversationId, buffer: "", active: true, toolStatus: null } },
+      errors: { ...s.errors, [conversationId]: null }, // clear error on new stream
     })),
   appendStreamingDelta: (conversationId, delta) =>
     set((s) => {
@@ -63,13 +68,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const updated = cur ? { ...cur, toolStatus } : { conversationId, buffer: "", active: false, toolStatus };
       return { streaming: { ...s.streaming, [conversationId]: updated } } as any;
     }),
+  setError: (conversationId, error) =>
+    set((s) => ({ errors: { ...s.errors, [conversationId]: error } })),
+  clearError: (conversationId) =>
+    set((s) => ({ errors: { ...s.errors, [conversationId]: null } })),
   setCitationMap: (conversationId, map) =>
     set((s) => {
       const cur = s.streaming[conversationId];
       const updated = cur ? { ...cur, citationMap: map } : { conversationId, buffer: "", active: false, citationMap: map };
       return { streaming: { ...s.streaming, [conversationId]: updated } } as any;
     }),
-
   openPdf: (opts) => set(() => ({ pdfViewer: { open: true, ...opts } })),
   closePdf: () => set(() => ({ pdfViewer: { open: false } })),
 }));

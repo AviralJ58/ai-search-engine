@@ -11,41 +11,50 @@ import ToolCallIndicator from "./ToolCallIndicator";
 export default function MessageList({ conversationId }: { conversationId: string }) {
   const messages = useChatStore((s) => s.messages[conversationId] || []);
   const streaming = useChatStore((s) => s.streaming[conversationId]);
+  const error = useChatStore((s) => s.errors[conversationId] || null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   // auto-scroll to bottom when messages change or streaming buffer updates
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages.length, streaming?.buffer]);
+  }, [messages.length, streaming?.buffer, error]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-10 py-10 w-full">
       {messages.map((m) => (
-        <div key={m.message_id}>
+        <div key={m.message_id} className="w-full">
           {m.role === "user" ? <UserMessage message={m} /> : <AssistantMessage message={m} />}
         </div>
       ))}
 
+      {/* Error message display */}
+      {error && (
+        <div className="w-full flex justify-center">
+          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-200 rounded-lg px-4 py-3 text-center max-w-xl mx-auto text-base font-medium shadow-sm">
+            <span className="inline-block align-middle">{error}</span>
+          </div>
+        </div>
+      )}
+
       {/* Streaming/typing/toolcall indicator */}
       {streaming && streaming.active && (
-        <div className="p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded">
-          <div className="flex items-center gap-2">
-            {/* Tool call progress indicator */}
+        <div className="w-full">
+          <div className="flex items-center gap-2 text-sm text-gray-500">
             {streaming.toolStatus?.tool === "search_documents" && (
-              <ToolCallIndicator text="Searching..." />
+              <ToolCallIndicator text="Searching documents…" />
             )}
             {streaming.toolStatus?.tool === "search_documents" && streaming.toolStatus?.status == null && (
-              <ToolCallIndicator text="Reading PDF..." />
+              <ToolCallIndicator text="Reading source…" />
             )}
-            {/* Typing indicator shown when generating answer */}
             {streaming.toolStatus?.tool === "generate_answer" && (
-            <TypingIndicator />
+              <TypingIndicator />
             )}
           </div>
-          <div className="mt-2 text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+          <div className="mt-2 prose prose-neutral dark:prose-invert max-w-none text-base leading-relaxed">
             {streaming.buffer}
             <StreamingCursor />
           </div>
+          <div className="border-t border-gray-100 dark:border-neutral-800 my-8" />
         </div>
       )}
       <div ref={bottomRef} />
