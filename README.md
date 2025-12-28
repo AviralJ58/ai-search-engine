@@ -159,11 +159,13 @@ npm run dev
 ### Backend (`backend/.env`)
 ```
 REDIS_URL=redis://localhost:6379
-SUPABASE_URL=...
-SUPABASE_KEY=...
-QDRANT_URL=...
-QDRANT_API_KEY=...
-GOOGLE_API_KEY=...
+QDRANT_URL=https://<your_qdrant_project_id>.us-east4-0.gcp.cloud.qdrant.io
+QDRANT_API_KEY=
+SUPABASE_URL=https://<your_supabase_project_id>.supabase.co
+SUPABASE_KEY=
+GOOGLE_GENAI_API_KEY=
+GOOGLE_GENAI_USE_VERTEXAI=
+FRONTEND_ORIGIN=http://localhost:3000,http://127.0.0.1:3000,localhost:3000,127.0.0.1:3000
 ```
 
 ### Frontend (`frontend/.env.local`)
